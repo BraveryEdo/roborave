@@ -1,3 +1,4 @@
+//Patrick Cincotta
 import java.util.*;
 
 public static boolean testing = false;
@@ -158,22 +159,6 @@ public class World {
     int wx = width/wn;
     int q  = 1;
 
-    //    for (int i = -hx - frameCount% (2*hx); i < (hn + 1)*hx; i += hx) {
-    //      fill(random(i%255), random(-i*222/height%255), random(255), random(100, 200));
-    //      rect(0, i, width, hx);
-    //
-    //      for (int j = 0; j < wn; j++) {
-    //        float w = j * wx;
-    //        fill(random(w%255), random(-w*222/width%255), random(255), random(10, 100));
-    //        if (q % 2 == 0) {
-    //          triangle(w, i, w, i + hx, w + wx, (2 * i + hx)/2);
-    //        } else {
-    //          triangle(w + wx, i, w + wx, i + hx, w, (2 * i + hx)/2);
-    //        }
-    //        q++;
-    //      }
-    //    }
-
     for (int i = -hx - frameCount% (2*hx); i < (hn + 1)*hx; i += hx) {
       noStroke();
       fill(i*222/width%255, -i*222/height%255, 77, random(100, 200));
@@ -199,28 +184,28 @@ public class World {
 
 
 public class Cat {
-  float x, y, s, laa, raa, xa, ya, bob, rate; // x position, y position, and size (in pixels)
-  // left arm angle, right arm angle, left leg angle, right leg angle, body angl 0 = normal/down
+  float x, y, s, xa, ya, bob, rate; // x position, y position, and size (in pixels)
   PShape cat, head, leye, reye, body, larm, rarm, tail, bodyArt;
+  PVector larma, rarma;
 
   // 1 = left -> right, -1 = right -> left
   int direction;
-  public Cat(float _x, float _y, float _s, float _laa, float _raa, int _d) {
+  public Cat(float _x, float _y, float _s, int _d) {
     x = _x;
     y = _y;
     s = _s;
-    laa = _laa;
-    raa = _raa;
     direction = _d;
     xa = 0;
     ya = 0;
     bob = 0;
     rate = .05;
+    larma = new PVector();
+    rarma = new PVector();
     posCat();
   }
 
   public Cat() {
-    this((float) width/2, (float)  height/2, (float)  70, 0, 0, 1);
+    this((float) width/2, (float)  height/2, (float)  70, 1);
   }
 
   public void drawCat() {
@@ -228,6 +213,13 @@ public class Cat {
   }
 
   public void move(float _x, float _y) {
+    
+    PVector pos = new PVector(x, y);
+    PVector mouse = new PVector(_x, _y);
+    
+    rarma = PVector.sub(pos, mouse);
+    rarma.normalize();
+    larma.set(rarma);
 
     if (_x > x && _x - x > 1) {
       xa += 0.1; 
@@ -266,15 +258,7 @@ public class Cat {
     } else {
       ya = 0;
     }
-    
-    //s/7*direction
-    laa = 3*PI/2 + (tan((mouseY - (this.y - (2*s/7)))/(mouseX - (this.x - (2.5*s/7*direction)))));
-    raa = laa;
-    
-    if(abs(this.x - mouseX) < 3){
-      laa = 0;
-      raa = 0;
-    }
+
     x += xa;
     y += ya;
 
@@ -308,7 +292,7 @@ public class Cat {
 
     //body segment is 5x4
     body.beginShape();
-    body.fill(0, 0, 0);
+    body.fill(max(-ya,0)*-ya, 0, 0);
     body.noStroke();
     body.vertex(-2, 2);
     body.vertex(2, 2);
@@ -330,12 +314,12 @@ public class Cat {
 
     PShape tie = createShape();
     tie.beginShape();
-    tie.fill(0, 0, 0);
+    tie.fill(200, 0, 0);
     tie.noStroke();
     tie.vertex(0.1, -2);
-    tie.vertex(0.2, 1.5);
-    tie.vertex(0, 1.85);
-    tie.vertex(-0.2, 1.5);
+    tie.vertex(0.2-xa/5*direction, 1.5);
+    tie.vertex(-xa/5*direction, 1.85);
+    tie.vertex(-0.2-xa/5*direction, 1.5);
     tie.vertex(-0.1, -2);    
     tie.endShape(CLOSE);
 
@@ -346,13 +330,13 @@ public class Cat {
     tail.beginShape(TRIANGLES);
     tail.noStroke();
     for (int i = 0; i < 20; i++) {
-      float rr = random(0, 25);
-      float rg = random(100, 200);
+      float rr = random(0, 25*-3*ya);
+      float rg = random(100-10*ya, 200);
       float rb = random(200, 255);
       float ro = random(20, 60);
       tail.fill(rr, rg, rb, ro);
       float rx = random(-2, 2);
-      float ry = random(3, 6);
+      float ry = random(3, 6)*max(-ya, 1);
       tail.vertex(2, 2);
       tail.vertex(-2, 2);
       tail.vertex(rx, ry);
@@ -385,7 +369,7 @@ public class Cat {
     larm.vertex(-2.55, 1.6);
     larm.endShape(CLOSE);
     larm.translate(-2.755, -1.8);
-    larm.rotate(laa);
+    larm.rotate((larma.heading()+90)*direction);
     larm.translate(2.755, 1.8);
     popMatrix();
 
@@ -399,7 +383,7 @@ public class Cat {
     rarm.vertex(2.55, 1.6);
     rarm.endShape(CLOSE);
     rarm.translate(2.755, -1.8);
-    rarm.rotate(raa);
+    rarm.rotate((rarma.heading()+90)*direction);
     rarm.translate(-2.755, 1.8);
     popMatrix();
 
@@ -413,7 +397,7 @@ public class Cat {
     cat.addChild(reye);
     cat.addChild(larm);
     cat.scale(s/7*direction, s/7);
-
+    cat.rotate(xa*direction*.05);
     popMatrix();
 
     if (testing) {
